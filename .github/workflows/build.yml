@@ -73,6 +73,8 @@ jobs:
           LDFLAGS = $(MCU)
           LDFLAGS += -Wl,--gc-sections
           LDFLAGS += -Wl,-Map=$(PROJECT).map
+          LDFLAGS += --specs=nosys.specs
+          LDFLAGS += -lm
 
           # Source files
           C_SOURCES = $(wildcard User/*.c)
