@@ -105,12 +105,10 @@ jobs:
       - name: Build project
         run: make
 
-      - name: Upload build artifacts
+      - name: Upload compiled object files
         uses: actions/upload-artifact@v4
         with:
-          name: LT7689-firmware
+          name: LT7689-object-files
           path: |
-            LT7689.elf
-            LT7689.hex
-            LT7689.bin
-            LT7689.map
+            **/*.o
+          retention-days: 30
