@@ -1,0 +1,821 @@
+#ifndef __BSP_h
+#define __BSP_h
+#include "LT768.h"
+#include "LT768_Lib.h"
+#include "uart.h"
+#include "rtc.h"
+#include "SinCosTable.h"
+#include "QR_Encode.h"
+#include "module_select.h"
+#include "bsp_user.h"
+#include "w25qxx.h"
+#include "w25n01.h"	
+#include "GBK.h"																			  //2019
+#include "pit32_drv.h"
+																			  
+
+#define SPI_X       1   // 选择LT768的SPI
+#define CLK_DIV     0   // SPI的分频系数
+
+#define OK  0
+
+
+#define MAIN_BUFF   LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*1
+#define LAY_BUFF1 	LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*2		//加载使用
+#define LAY_BUFF2 	LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*3		//加载使用	  
+#define LAY_BUFF3 	LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*4		//加载使用	  
+#define LAY_BUFF4 	LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*5   //NandFlash使用    
+#define LAY_BUFF5 	LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*6		//未使用	
+#define LAY_BUFF6 	LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*7		//Nand Flash		文本显示
+#define LAY_BUFF7 	LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*8   //目前切换页面缓存使用   弹窗页面使用
+#define LAY_BUFF8 	LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*9   //未使用    
+#define LAY_BUFF9	  LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*10  //环形进度条silide使用   //键盘光标使用  
+#define LAY_BUFF10 	LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*11	//未使用
+#define LAY_BUFF11 	LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*12	//目前键盘按键效果使用 + 编码器使用
+#define LAY_BUFF12 	LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*13     //文本滚动———占用两个层
+#define LAY_BUFF14	LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*15
+#define slideMune_BUFF   LCD_XSIZE_TFT*LCD_YSIZE_TFT*(2+TFT_bitcolor)*9
+
+
+extern u32 Display_Layer;
+extern u8 Flash_type;
+
+/****ModBus运行变量*****/
+extern u16 Cnt_ModbusTX;
+extern u16 Sum_ModbusTX;
+
+/*图片信息*/
+extern u16 pic_id ;
+extern u16 pic_id_temp;
+extern u32 pic_add ;
+extern u16 pic_w ;
+extern u16 pic_h ;
+extern u32 pic_len ;
+extern u8 pic_flag ;
+
+/*******变量空间*/
+extern volatile u8 var_temp[];
+extern volatile u8 var[];
+extern u8 config_buff[];  //变量buff
+extern char Display_buff[];
+
+extern u16 Curve_buff[Curve_Size][1024]; 	//曲线数据缓冲区：8个通道，共16KB
+extern u16 Curve_count[Curve_Size];			//曲线长度
+extern u8 curve_update_flag[Curve_Size];		//曲线更新标志位
+/****************/
+/**背光变量*/
+extern u16 gDutyBuf[];
+extern u8 gDutyflag;
+extern u8 Auto_Backlight;  //自动背光
+extern u8 Backlight_On;
+extern u8 Backlight_Off;	
+extern u16 Backlight_time;
+extern u32	Backlight_count;
+extern u8 Backlight_flag;
+extern u8 Backlight_first_touch;
+extern u8 Backlight_touch;
+
+/*自动背光*/
+void BackLight_control(void);
+/**********/
+ 
+/****配置参数变量*****/
+
+extern u8 buzzer;
+extern u16 Start_page;
+extern u8 SCI_C0;	
+extern u8 SCI_C1;
+extern u8 CRC_Enable_Flag;
+extern u8 CRC_Feedback_Flag;
+extern u8 Screen_DIR;	
+extern u8 TFT_bitcolor;	
+/********************/
+
+void LT_ReceiveCmd(u8 *buf);	
+void LT_ModBus_REG_Cmd(void);	
+
+
+void Display_page(u16 id);
+void download_page(u16 id,u16 Layer_width,u16 sdram_x,u16 sdram_y);
+void Display_Icon(u16 id, u16 x,u16 y,u8 Display_mode);
+void LT_ReadFlash(u8* pBuffer,u32 ReadAddr,u16 NumByteToRead);
+void reg_operation(u16 addr);		//寄存器操作
+
+/****变量显示****/
+void LT_Print_zk_ASCII
+(
+ unsigned long FlashAddr     		  // 字库源地址(Flash)    
+,unsigned long ShowAddr           // 显示层的地址
+,unsigned short width             // 显示层的宽度
+,unsigned char W_Size          		// 设置字体宽度
+,unsigned char H_Size          		// 设置字体高度
+,unsigned char Alignment					//对齐方式  0左对齐，1右对齐，2居中
+,unsigned long FontColor          // 字体的颜色
+,unsigned short Xs                // 文本框起始x位置
+,unsigned short Ys                // 文本框起始y位置
+,unsigned char *c                 // 数据缓冲的首地址
+);
+void data_display(u8 type,u8 *buff);    //变量显示
+extern u8 data_D_num ;  //用于记录数据显示的宽度
+/**********************************/
+
+/*文本显示*/
+void text_display(u8 type ,u8 *buff);   
+void LT_Print_zk_Font
+(	
+unsigned short encode         			// 编码类型
+,unsigned long FlashAddr     				// 字库源地址(Flash)    
+,unsigned long ShowAddr             // 显示层的地址
+,unsigned short width               // 显示层的宽度
+,unsigned char W_Size          			// 设置字体宽度
+,unsigned char H_Size          			// 设置字体高度
+,unsigned char Alignment						// 对齐方式
+,unsigned long FontColor            // 字体的颜色
+,unsigned char star									// 显示*号
+,unsigned short Xs                  // 文本框起始x位置
+,unsigned short Ys                  // 文本框起始y位置
+,unsigned short Xe                  // 文本框结束x位置
+,unsigned short Ye                  // 文本框结束y位置
+,unsigned char dis_x                // x方向间距
+,unsigned char dis_y                // y方向间距
+,unsigned char *c                   // 数据缓冲的首地址
+,unsigned short len_max 	
+);
+/***********/
+void icon_display(u8 type,u8 *buff);		//icon显示
+void qr_code(u8 type,u8 *buff);		//二维码显示
+/**/
+void pic_date_display(u8 type,u8 *buff);	//图片数据显示
+extern u8 pdata_D_num;		//用于记录图片数据显示的的宽度
+/**/
+void progress_bar(u8 type,u8 *buff);  //进度条
+void Circular_progress_bar(u8 type,u8 *buff);	//环形进度条 
+void bit_control(u8 type,u8 *buff); //位变量控制
+
+
+/***编码器*/
+void get_encoder(u8 type,u8 *buff,u16 addr);	//编码器
+void encoder(void);
+extern u8 gEncoderFlag;
+extern u16 Check_box_add ;
+extern u8 Check_box_flag;
+extern u8 Encoder_num ;
+
+extern u8 Encoder_read_Flag, Encoder_Freetime ;
+extern u8 knob_dir , SW_flag , Enc0 ,Enc1, SW_flag4 , key_time;
+extern u16 Encoder_time;
+extern u8 Double_click_interval;
+extern u8 Long_press ,Encoder_type;
+/*********/
+
+/*gif显示*/
+extern u8 Gif_num;
+extern u8 Gif_flag;
+typedef struct                
+{
+	u32 addr;
+	u32 total;
+	u16 p_add;
+	u16 x;								//起始显示地址
+	u16 y;
+	u16 w;
+	u16 h;
+	u16 gif_id;
+	u16 reset_En;         //0x0000:停止时，不复位动画图标起始值（动画图标显示从 ICON_Start到 ICON_End 间的一个任意值开始显示）。
+														//0x0001:停止时，复位动画图标起始值（动画图标显示将固定从ICON_Start开始显示）。
+	u8 t_d;             //帧时间间隔
+	u8 t_c;							//记录时间
+	u8 p_c;
+	u16 V_stop;        //变量为该值时显示固定图标。
+	u16 V_start;        //变量为该值时自动显示动画图标。
+	u16 V_once;				//播放一次结束
+	u8 mode ;
+	u8 flag;
+	u16 var_addr[8];
+	u16 var[8];
+}Gif_Info;
+extern Gif_Info gGif_Info[];
+void gif_display(u8 type,u8 *buff);     
+void show_gif(void);
+u8 LT_ShowGifPicture(u8 num);
+
+
+
+
+/*RTC显示*/
+extern u8 RTC_num;	
+extern u8 RTC_flag;
+typedef struct                
+{
+	u16 x;					
+	u16 y;
+	u16 ID_start;        //变量为该值时显示固定图标。
+	u8 mode ;
+	u16 Len_last;
+}RTC_Info;
+extern RTC_Info gRTC_Info[];
+
+void RTC_display(u8 type,u8 *buff);
+
+void show_RTC(void);
+/************/
+
+
+/*时钟显示*/
+extern u8 Clock_num;	 
+extern u8 Clock_flag;
+typedef struct                
+{
+	u16 x;					
+	u16 y;
+	u16 Image_BG;       
+	u8 L_hour;
+	u8 S_hour;	
+	u8 W_hour;
+	u32 Color_hour;
+	u8 L_min;
+	u8 S_min;	
+	u8 W_min;
+	u32 Color_min;	
+	u8 L_sec;
+	u8 S_sec;	
+	u8 W_sec;
+	u32 Color_sec;
+
+	u16 x_pic;
+	u16 y_pic;
+	u16 w_pic;	
+	u16 h_pic;
+	u32 addr_pic;
+	u32 len_pic;
+	u8 flag_pic;
+	
+	u16 x_cen;
+	u16 y_cen;
+	u16 w_cen;	
+	u16 h_cen;
+	u32 addr_cen;
+	u32 len_cen;
+	u8 flag_cen;	
+}Clock_Info;
+extern Clock_Info gClock_Info[];
+void DrawPoint_Buffer_alphablend(int buff_x, int buff_y, float alpha, UINT32 color, UINT16 canvas) ;
+void Clock_display(u8 type,u8 *buff);
+void show_Clock(void);
+extern u32 Lay_temp ;
+/***************/
+
+
+/*文字滚动*/
+extern u8 Scroll_num; 
+extern u8 Scroll_flag;
+//extern u8 Scroll_flag;
+typedef struct                
+{
+	u16 x;					
+	u16 y;
+	u16 xe;			
+	u16 ye;	
+	u16 w;
+	u16 h;
+	u16 len;		//滑动内容的总像素长度
+	u16 cnt;		//记录滚动的像素偏移量
+	u8 flag;		//是否滚动
+	u16 y_offset;	//记录文本内容在缓冲区的y坐标偏移量
+	u8 t_d;			//帧时间间隔
+	u8 t_c;			//记录时间
+	u16 gap;		//尾部与开头的间距	
+	u8 transparent;	//是否显示背景色
+	u8 scroll_en;	//是否滚动
+	u8 pixel_format; //灰阶
+	u32 bcolor;
+}Scroll_Info;
+extern Scroll_Info gScroll_Info[];
+
+void text_scroll(u8 type,u8 *buff);
+void scroll_text(void);
+/***********************/
+
+/*曲线图*/
+extern u8 curve_num;
+extern u8 curve_flag;
+typedef struct                
+{
+	u16 xs;								
+	u16 ys;			
+	u16 xe;			
+	u16 ye;			
+	u16 Y_Central;	//纵轴中间值绝对坐标		
+	u16 VD_Central;	//纵轴中间基准值		
+	u32 color;		//曲线颜色		
+	u16 MUL_Y;		//放大/缩小倍数：MUL_Y/256	
+	u8 channel;		//通道	
+	u8 Dis_HOR;		//点间距	
+	u8 Width;		//曲线粗细
+	u8 group;		//组编号
+	u8 dir;			//方向	
+}Curve_Info;
+extern Curve_Info gCurve_Info[];
+
+void Curve_display(u8 type,u8 *buff);
+void Display_Curve(void);
+/**********/
+
+
+/*计数显示*/
+typedef struct                
+{
+	u16 v_add;
+	u16 t_add;
+	u16 c_add;
+	u16 x;					
+	u16 y;
+	u16 ID_start;        
+	u8 dis_mode ;
+	u8 dir;
+	u8 end_mode;
+	u8 end_feedback;
+	u16 var_addr[8];
+	u16 var[8];
+	u16 last_w;
+}Count_Info;
+extern Count_Info gCount_Info[];
+
+extern u8 Count_sum;
+extern u8 Count_flag;
+void Saving_counting_parameters(void);
+u8 Display_Count(u8 i);
+void show_Count(void);
+void count_display(u8 type,u8 *buff);
+typedef struct
+{
+	u16 v_add;
+	u16 t_add;
+	u16 c_add;
+	u8 dir;
+	u8 end_feedback;
+	u16 var_addr[8];
+	u16 var[8];
+}Record_count_Info;
+extern Record_count_Info gRecord_count_Info[];
+extern u8 Record_count;
+
+/*************************/
+
+
+//触控部分
+
+/*触控公用*/
+extern u8 button_Press_flag ;
+extern u8 Button_Key_Code_Flag;
+extern u16  Button_Key_Code;
+/*********/
+extern u8 buzzer_start ;
+extern u8 buzzer_10ms_count ;
+void touch_buzzer(void);
+/***基础触控*/
+typedef struct                   
+{
+	u16 Code;     	//功能码        
+	u8 len;        	//长度
+	u16 Xs;					//左上角坐标
+	u16 Ys;
+	u16 Xe;					//右下角坐标
+	u16 Ye;
+	u16 Keyvalue;   //键值
+	u16 id;         //图标id
+	u16 press_id;
+	u16 Next_id;
+}Basci_Info;
+extern Basci_Info gBasci_Info[];
+extern u8 Basci_count;
+extern u8 Basci_flag;
+extern u8 Basci_num;
+void Basic_touch(void);
+/*************/
+
+
+/*增量调节*/
+
+typedef struct                   
+{
+	u16 Code;     	//功能码        
+	u8 len;        	//长度
+	u16 Xs;					//左上角坐标
+	u16 Ys;
+	u16 Xe;					//右下角坐标
+	u16 Ye;
+	u16 p_add;			//变量指针地址
+	u8 p_tpye; 	  //变量类型
+	u8 Adj_mode;         //图标id
+	u8 Return_Mode;	//阈值返回
+	u16 Adj_step; 	//调节步长
+	signed short V_min;			//下限
+	signed short V_max;			//上限
+	u8 key_mode;		//按压模式 ，0连续调节，1只调节一次
+	u16 id;
+	u16 press_id;
+}Adj_Info;
+extern Adj_Info gAdj_Info[];
+
+extern u8 Adj_count;
+extern u8 Adj_flag ;
+extern u8 Adj_num ;
+extern u8 Adj_time ;
+extern u8 Adj_loop ;
+
+void Adj_touch(void);
+/***********/
+
+
+/*滑动调节*/
+
+
+typedef struct                   
+{
+	u16 Code;     	//功能码        
+	u8 len;        	//长度
+	u16 x1;					//底图坐标
+	u16 y1;					//底图坐标
+	u16 bgid;				//背景图id
+	u16 x2;					//进度图x
+	u16 y2;					//进度条y
+	u16 slideid;		//进度图id
+	u16 Xs;					//滑动左上角坐标
+	u16 Ys;
+	u16 Xe;					//滑动右下角坐标
+	u16 Ye;
+	u16 p_add;			//变量指针地址
+	u16 arrowid;		//触控头id
+	u8 direction;   //滑动方向
+	u16 lastx;
+	u16 lasty;
+	u16 dx;
+	u16 dy;
+	signed short V_min;			//下限
+	signed short V_max;			//上限
+}Slide_Info;
+extern Slide_Info gSlide_Info[];
+
+extern u8 Slide_count;
+extern u8 Slide_flag;
+extern u8 slide_first_touch;
+extern u8 slide_num;	
+
+void Disp_slide(u8 i);
+void Progress_bar_sliding(void);
+
+/********/
+
+
+
+
+/*数据输入*/
+
+typedef struct                   
+{
+	u16 Code;    	//功能码        
+	u8 len;       //长度
+	u16 Xs;				//左上角坐标
+	u16 Ys;
+	u16 Xe;				//右下角坐标
+	u16 Ye;
+	u16 p_add;		//变量指针地址
+	u8 p_tpye; 	  //变量类型
+	u8 I_num;			//整数位
+	u8 D_num;			//小数位
+	u16 kb_x;			//键盘显示位置
+	u16 kb_y;			//键盘显示位置
+	u16 dp_x;			//数据显示位置
+	u16 dp_y;			//数据显示位置
+	u8 zk_id;
+	u8 zk_w;
+	u8 zk_h;
+	u8 cursor_color;
+	u16 kb_id;
+	u8 Limite_EN;			//0xFF:启用输入范围限制
+	signed int V_min;			//下限
+	signed int V_max;			//上限
+	u8 Alig; 		//数据输入左右对齐
+	u32 fcolor;
+
+}Dio_Info;
+
+extern Dio_Info gDio_Info[];
+
+extern u8 Dio_count;
+extern u8 Dio_num;
+extern u8 Dio_flag;
+
+void data_input(void);
+/***********/
+
+
+
+
+/*键盘按键*/
+
+typedef struct                   
+{
+	u16 Code;    	//功能码        
+	u8 len;       //长度
+	u16 Xs;				//左上角坐标
+	u16 Ys;
+	u16 Xe;				//右下角坐标
+	u16 Ye;
+	u16 Keyvalue;		//键值
+	u16 press_id; 	  //变量类型
+	
+}Kb_Info;
+
+extern Kb_Info gKb_Info[];
+
+extern u8 Kb_count;
+extern u8 Kb_num;
+extern u8 Kb_flag;
+extern u8 DioKb_flag;
+extern u8 dot_flag;
+extern u8 i_len;
+extern u8 d_len;
+extern u16 input_len;
+extern u8 neg_flag;
+extern u16 input_w;
+extern u8 cur_w;
+extern u16 cur_x;
+extern u16 cur_y;
+extern u16 Cusor_time;
+extern u8 Cusor_sw;
+/***********/
+
+
+/*滑动菜单*/
+
+typedef struct                   
+{
+	u16 Code;    	//功能码        
+	u8 len;       //长度
+	u16 p_add;		//变量指针
+	u16 Xs;				//左上角坐标
+	u16 Ys;
+	u16 Xe;				//右下角坐标
+	u16 Ye;
+	u16 L1;		
+	u16 L2; 
+	u8 dir;
+	u16 frontID;	//高亮图片ID
+	u16 bgID;			//背景图片ID
+	u8 flag ;
+	u16 V_max;
+	u16 V_min;
+	u16 step;
+	signed short pos;		//用于记录位置
+	
+}SldMenu_Info;
+
+extern SldMenu_Info gSldMenu_Info[];
+extern u8 sldmenu_count;
+extern u8 sldmenu_num;
+extern u8 sldmenu_flag;
+extern u8 SLDMfirsttouch;
+extern u16 lastx;
+extern u16 lasty;
+extern u16 Sldw;
+extern u16 Sldh;
+extern u8 sld_mum;
+void slideMune(void);
+void DL_menu(u8 num);
+void dp_menu(u8 num);
+/****************/
+
+/***手势滑动*/
+typedef struct                   
+{
+	u16 Code;     	//功能码        
+	u8 len;        	//长度
+
+	u16 page[4];
+	u16 value[4];
+}Gesture_Info;
+extern Gesture_Info gGesture_Info;
+
+extern u8 Gesture_press;		
+extern u8 Gesture_direction;	
+extern u8 Gesture_flag;
+
+void Gesture_touch(void);
+
+/**滑动屏幕**/
+
+typedef struct                   
+{
+	u16 Code;     	//功能码        
+	u8 len;        	//长度
+	u16 page[2];
+	u16 value[2];
+	u16 ys;
+	u16 ye;
+}Sld_sc_Info;
+extern Sld_sc_Info gSld_sc_Info;
+extern u8 Ges_sc_flag;
+extern u8 gFirstTouch;
+void slide_screen(void);
+/***********/
+
+
+/*圆环滑动*/
+typedef struct                   
+{
+	u16 Code;    	//功能码        
+	u8 len;       //长度
+	u16 p_add;		//变量指针
+	u16 x;				//左上角坐标
+	u16 y;				
+	u16 frontID;	//高亮图片ID
+	u16 bgID;			//背景图片ID
+	u16 arrowid;  //触控头id
+	u16 Sld_R;		//滑动半径
+	u8 tp_R;			//触控半径
+	u16 Vmin;
+	u16 Vmax;
+	u16 Sangle;
+	u16	Eangle;
+	u16 dx;
+	u16 dy;
+	u8 I_num;
+	u8 D_num;
+	u8 Alig;
+	u8 zk_id;
+	u32 color;
+	u16 s_id;
+	u16 e_id;
+	u8 flag;
+	
+	u16 w1;
+	u16 h1;
+	u8 rm1;
+	u16 x2;
+	u16 y2;
+	u16 w2;
+	u16 h2;
+	u8 rm2;
+	u16 xR;
+	u16 yR;
+	
+}RingSld_Info;
+extern RingSld_Info gRingSld_Info[];
+
+extern u8 RingSld_count;
+extern u8 RingSld_firsttouch;
+extern u8 RingSld_firstnum;
+
+void DL_RingSld(u8 num);
+void RingSld_Display(u8 num,u16 angle);
+void RingSld_touch(void);
+/********/
+
+/*********ASCII录入*****/
+
+typedef struct                   
+{
+	u16 Code;    	//功能码        
+	u8 len;       //长度
+	u16 Xs;				//左上角坐标
+	u16 Ys;
+	u16 Xe;				//右下角坐标
+	u16 Ye;
+	u16 p_add;		//变量指针地址
+	u16 p_len; 	  //变量长度
+	u8 scan_mode;	//录入模式
+	u8 zk_id;			//字库id
+	u8 zk_w;			//字体宽度
+	u8 zk_h;			//字体高度
+	u8 cursor_color;	//光标颜色
+	u32 fcolor;
+	u16 dp_x;			//文本显示位置
+	u16 dp_y;			//文本显示位置
+	u16 kb_id;  
+	u16 kb_x;			//键盘显示位置
+	u16 kb_y;			//键盘显示位置
+	u8 input_mode;
+	u32 zk_addr;
+}Aio_Info;
+extern Aio_Info gAio_Info[];
+extern u8 Aio_count;
+extern u8 Aio_num;
+extern u8 Aio_flag;
+extern u8 AioKb_flag;
+extern u8 CapsLock;
+
+void Ascii_input(void);
+
+/*****************/
+
+
+/**********GBK输入*****/
+
+typedef struct                   
+{
+	u16 Code;    	//功能码        
+	u8 len;       //长度
+	u16 Xs;				//左上角坐标
+	u16 Ys;
+	u16 Xe;				//右下角坐标
+	u16 Ye;
+	u16 p_add;		//变量指针地址
+	u16 p_len; 	  //变量长度
+	u8 scan_mode;	//录入模式
+	u8 zk_id;			//字库id
+	u8 zk_w;			//字体宽度
+	u8 zk_h;			//字体高度
+	u8 cursor_color;	//光标颜色
+	u32 fcolor;
+	u16 dp_x;			//文本显示位置
+	u16 dp_y;			//文本显示位置
+	u32 pycolor;
+	u8 py_zk;
+	u8 py_w;
+	u8 py_h;
+	u16 py_x;			//PY显示位置
+	u16 py_y;	
+	u16 cn_x;
+	u16 cn_y;
+	u8 spacing ; 	//汉字显示间距
+	u16 kb_id;  
+	u16 kb_x;			//键盘显示位置
+	u16 kb_y;			//键盘显示位置
+	u8 input_mode;
+	u32 zk_addr;
+	u32 py_addr;
+}GBKio_Info;
+extern GBKio_Info gGBKio_Info[];
+
+void GBK_input(void);
+extern u8 GBKio_count ;
+extern u8 GBKio_num ;
+extern u8 GBKio_flag ;
+extern u8 GBKioKb_flag ;
+extern u8 GBK_PY_length ;  //拼音长度
+extern u8 GBK_CN_EN ; 		 //中英文输入法使能
+extern u8 GBK_PY_buff[] ; 
+extern u16 GBK_PY_num ;
+extern u8 GBK_len ;
+extern u32 GBK_PY_addr ;
+extern u8 GBK_linenum ;
+/********************/
+
+/*************变量修改****************/
+
+typedef struct                   
+{
+	u16 Code;     	//功能码        
+	u8 len;        	//长度
+	u16 Xs;					//左上角坐标
+	u16 Ys;
+	u16 Xe;					//右下角坐标
+	u16 Ye;
+	u16 id;         //图标id
+	u16 press_id;
+	u16 Next_id;
+	u16 var_addr[8];
+	u16 var[8];
+}VarKey_Info;
+extern VarKey_Info gVarKey_Info[];
+extern u8 VarKey_count;
+extern u8 VarKey_flag;
+extern u8 VarKey_num;
+void VarKey_touch(void);
+
+
+/************************************/
+
+/***********弹出视窗*****/
+
+
+typedef struct                   
+{
+	u16 Code;     	//功能码        
+	u8 len;        	//长度
+	u16 Xs;					//左上角坐标
+	u16 Ys;
+	u16 Xe;					//右下角坐标
+	u16 Ye;
+	u16 Keyvalue;   //键值
+	u16 id;         //图标id
+	u16 press_id;
+	u16 pop_up_id;	
+	u16 pop_up_x;
+	u16 pop_up_y;
+	u8 function;
+	
+}Pop_up_Info;
+extern Pop_up_Info gPop_up_Info[];
+extern u8 Pop_up_count;
+extern u8 Pop_up_flag;
+extern u8 Pop_up_num;
+extern u8 Pop_up_press;
+extern u16 Pop_up_x;
+extern u16 Pop_up_y;
+extern u16 Pop_up_id;
+void pop_up_touch(void);
+/************************/
+#endif

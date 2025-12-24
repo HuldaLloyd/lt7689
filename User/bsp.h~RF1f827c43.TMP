@@ -1,0 +1,905 @@
+/*******************************************************************************
+ * Copyright(c) 2023 Levetop Semiconductor Co.,Led. All rights reserved.
+ * @file     bsp.h
+ * @author   UartTFT Application Team
+ * @version  V1.0.0
+ * @date     2023-02-24
+ * @brief    This file contains the functions prototypes for the UartTFT
+ *           Application display firmware.
+ ********************************************************************************/
+
+#ifndef __BSP_h
+#define __BSP_h
+#include "LT768.h"
+#include "LT768_Lib.h"
+#include "uart.h"
+#include "rtc.h"
+#include "sincostable.h"
+#include "QR_Encode.h"
+#include "module_select.h"
+#include "bsp_user.h"
+#include "w25qxx.h"
+#include "w25n01.h"
+#include "gbk.h"
+#include "pit32_drv.h"
+
+#define SPI_X	1	// Select SPI of LT768
+#define CLK_DIV	0	// Frequency division coefficient of SPI
+extern uint32_t Display_Layer;
+extern uint8_t Flash_type;
+
+#define MAIN_BUFF		LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 1
+#define LAY_BUFF1		LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 2		// Used for buffer
+#define LAY_BUFF2		LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 3		// Used for buffer
+#define LAY_BUFF3		LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 4		// Used for buffer
+#define LAY_BUFF4		LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 5		// Used for NandFlash buffer
+#define LAY_BUFF5		LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 6		// Not used
+#define LAY_BUFF6		LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 7		// Nand Flash / Used for text display
+#define LAY_BUFF7		LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 8		// Used for switching pages and pop-up pages
+#define LAY_BUFF8		LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 9		// Not used
+#define LAY_BUFF9		LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 10		// Used for circular progress bar and keyboard cursor
+#define LAY_BUFF10		LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 11		// Not used
+#define LAY_BUFF11		LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 12		// Used for Keyboard key effect and encoder
+#define LAY_BUFF12		LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 13		// Used for text scrolling(occupying two layers)
+#define LAY_BUFF14		LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 15
+#define slideMune_BUFF	LCD_XSIZE_TFT * LCD_YSIZE_TFT * (2 + TFT_bitcolor) * 9
+
+/****ModBus operation variable****/
+extern uint16_t Cnt_ModbusTX;
+extern uint16_t Sum_ModbusTX;
+
+/****Picture information****/
+extern uint16_t pic_id;
+extern uint16_t pic_id_temp;
+extern uint32_t pic_add;
+extern uint16_t pic_w;
+extern uint16_t pic_h;
+extern uint32_t pic_len;
+extern uint8_t pic_flag;
+
+/****Variable space****/
+extern volatile uint8_t var_temp[];
+extern volatile uint8_t var[];
+extern uint8_t config_buff[];
+extern int8_t Display_buff[];
+
+extern uint16_t Curve_buff[Curve_Size][1024];	// Curve data buffer
+extern uint16_t Curve_count[Curve_Size];		// Curve length
+extern uint8_t curve_update_flag[Curve_Size];	// Curve update flag
+/****************/
+
+/****Backlight variable****/
+extern uint16_t gDutyBuf[];
+extern uint8_t gDutyflag;
+extern uint32_t Backlight_count;
+extern uint8_t Backlight_flag;
+extern uint8_t Backlight_first_touch;
+extern uint8_t Backlight_touch;
+
+void BackLight_control(void);
+/**********/
+
+/****Configuration parameter variable****/
+extern uint8_t buzzer;
+extern uint16_t Start_page;
+extern uint8_t SCI_C0;
+extern uint8_t SCI_C1;
+extern uint8_t CRC_Enable_Flag;
+extern uint8_t CRC_Feedback_Flag;
+extern uint8_t parity_flag;	
+extern uint8_t Screen_DIR;
+extern uint8_t TFT_bitcolor;
+/********************/
+
+void LT_ReceiveCmd(uint8_t *buf);	// communication
+void LT_ModBus_REG_Cmd(void);
+
+void LT_ReadFlash(uint8_t *pBuffer, uint32_t ReadAddr, uint16_t NumByteToRead);
+void reg_operation(uint16_t addr);	// Register operation
+
+/**Page display**/
+void Display_page(uint16_t id);
+void download_page(uint16_t id, uint16_t Layer_width, uint16_t sdram_x, uint16_t sdram_y);
+/******************/
+
+/****Text display****/
+void LT_Print_zk_Font
+(
+	uint16_t encode		// Encoding type, 0:GB2312  1:GBK  2:BIG5  3:UNICODE  4:ASCII 6:UNICODE
+	,
+	uint32_t FlashAddr	// Font source address(exSpiFlash)
+	,
+	uint32_t ShowAddr	// Displays the address of the layer
+	,
+	uint16_t width		// Display the width of the layer
+	,
+	uint8_t W_Size		// Font width
+	,
+	uint8_t H_Size		// Font height
+	,
+	uint8_t Alignment	// Alignment 0:Left	1:Mid	2:Right
+	,
+	uint32_t FontColor	// The foreground color of the font
+	,
+	uint8_t star		// Text display mode: 0:txt  1:encryption use '*' (0x2A)
+	,
+	uint16_t Xs			// Text box start x position
+	,
+	uint16_t Ys			// Text box start Y position
+	,
+	uint16_t Xe			// Text box end x position
+	,
+	uint16_t Ye			// Text box end y position
+	,
+	uint8_t dis_x		// The interval between two adjacent fonts on the x-axis
+	,
+	uint8_t dis_y		// The interval between two adjacent fonts on the y-axis
+	,
+	uint8_t *c			// Address of text
+	,
+	uint16_t len_max	// max lenght of text
+);
+
+void text_display(uint8_t type, uint8_t *buff);
+/***********/
+
+/****Font digital display****/
+void LT_Print_zk_ASCII
+(
+	uint32_t FlashAddr	// Font source address(exSpiFlash)
+	,
+	uint32_t ShowAddr	// Displays the address of the layer
+	,
+	uint16_t width		// Display the width of the layer
+	,
+	uint8_t W_Size		// Font width
+	,
+	uint8_t H_Size		// Font height
+	,
+	uint8_t Alignment	// Alignment 0:Left	1:Mid	2:Right
+	,
+	uint32_t FontColor	// The foreground color of the font
+	,
+	uint16_t Xs			// Text box start x position
+	,
+	uint16_t Ys			// Text box start Y position
+	,
+	uint8_t *c			// Address of text
+);
+void data_display(uint8_t type, uint8_t *buff);
+extern uint8_t data_D_num; // Width of record data display
+/**********************************/
+
+/****Icon display****/
+void Display_Icon(uint16_t id, uint16_t x, uint16_t y, uint8_t Display_mode);
+void icon_display(uint8_t type, uint8_t *buff);
+/********************/
+
+/****QR code display****/
+void qr_code(uint8_t type, uint8_t *buff);
+/**********************/
+
+/****Picture data display****/
+void pic_date_display(uint8_t type, uint8_t *buff);
+extern uint8_t pdata_D_num; // Record the width of image data display
+/****************************/
+
+/****Progress bar display****/
+void progress_bar(uint8_t type, uint8_t *buff);			 // Progress bar
+void Circular_progress_bar(uint8_t type, uint8_t *buff); // Circular progress bar
+/****************************/
+
+/****Bit variable control****/
+void bit_control(uint8_t type, uint8_t *buff);
+/****************************/
+
+/****Encoder control****/
+#if encoder_on
+#define PINA UART_ReadGpioData(SCI3, UART_TX)			//Knob key
+#define PINB UART_ReadGpioData(SCI2, UART_RX)
+#define Read_Encoder_key EPORT_ReadGpioData(EPORT_PIN2)
+#define EncType 0 		//0 is a certain bit one pulse, 1 is two positioning one pulse
+void get_encoder(uint8_t type, uint8_t *buff, uint16_t addr);
+void encoder(void);
+extern uint8_t gEncoderFlag;
+extern uint16_t Check_box_add;
+extern uint8_t Check_box_flag;
+extern uint8_t Encoder_num;
+extern uint8_t Encoder_read_Flag, Encoder_Freetime;
+extern uint8_t knob_dir, SW_flag, Enc0, Enc1, SW_flag4, key_time;
+extern uint16_t Encoder_time;
+extern uint8_t Double_click_interval;
+extern uint8_t Long_press, Encoder_type;
+#endif
+/**********************/
+
+/****Gif display****/
+extern uint8_t Gif_num;
+extern uint8_t Gif_flag;
+typedef struct
+{
+	uint32_t addr;
+	uint32_t total;
+	uint16_t p_add;
+	uint16_t x;
+	uint16_t y;
+	uint16_t w;
+	uint16_t h;
+	uint16_t gif_id;
+	uint16_t reset_En;	// 0x0000:Do not reset the animation icon start value when stopping
+						// 0x0001:Reset the animation icon start value when stopping
+	uint8_t t_d;		// Frame time interval
+	uint8_t t_c;		// Record time
+	uint8_t p_c;
+	uint16_t V_stop;	// The fixed icon is displayed when the variable is at this value.
+	uint16_t V_start;	// The animated icon is automatically displayed when the variable is this value.
+	uint16_t V_once;	// play only once
+	uint8_t mode;
+	uint8_t flag;
+	uint16_t var_addr[8];
+	uint16_t var[8];
+	uint8_t on_gif;
+} Gif_Info;
+extern Gif_Info gGif_Info[];
+void gif_display(uint8_t type, uint8_t *buff);
+void show_gif(void);
+uint8_t LT_ShowGifPicture(uint8_t num);
+/**********************/
+
+/****RTC display****/
+extern uint8_t RTC_num;
+extern uint8_t RTC_flag;
+typedef struct
+{
+	uint16_t x;
+	uint16_t y;
+	uint16_t ID_start; // The fixed icon is displayed when the variable is at this value.
+	uint8_t mode;
+	uint16_t Len_last;
+} RTC_Info;
+extern RTC_Info gRTC_Info[];
+
+void RTC_display(uint8_t type, uint8_t *buff);
+void show_RTC(void);
+/************/
+
+/****RTC clock display****/
+extern uint8_t Clock_num;
+extern uint8_t Clock_flag;
+typedef struct
+{
+	uint16_t x;
+	uint16_t y;
+	uint16_t Image_BG;
+	uint8_t L_hour;
+	uint8_t S_hour;
+	uint8_t W_hour;
+	uint32_t Color_hour;
+	uint8_t L_min;
+	uint8_t S_min;
+	uint8_t W_min;
+	uint32_t Color_min;
+	uint8_t L_sec;
+	uint8_t S_sec;
+	uint8_t W_sec;
+	uint32_t Color_sec;
+
+	uint16_t x_pic;
+	uint16_t y_pic;
+	uint16_t w_pic;
+	uint16_t h_pic;
+	uint32_t addr_pic;
+	uint32_t len_pic;
+	uint8_t flag_pic;
+
+	uint16_t x_cen;
+	uint16_t y_cen;
+	uint16_t w_cen;
+	uint16_t h_cen;
+	uint32_t addr_cen;
+	uint32_t len_cen;
+	uint8_t flag_cen;
+} Clock_Info;
+extern Clock_Info gClock_Info[];
+void DrawPoint_Buffer_alphablend(int32_t buff_x, int32_t buff_y, float alpha, uint32_t color, uint16_t canvas);
+void Clock_display(uint8_t type, uint8_t *buff);
+void show_Clock(void);
+extern uint32_t Lay_temp;
+/******************/
+
+/****Text scroll display****/
+extern uint8_t Scroll_num;
+extern uint8_t Scroll_flag;
+
+typedef struct
+{
+	uint16_t x;
+	uint16_t y;
+	uint16_t xe;
+	uint16_t ye;
+	uint16_t w;
+	uint16_t h;
+	uint16_t len;			// Total pixel length of sliding content
+	uint16_t cnt;			// Record the pixel offset of scrolling
+	uint8_t flag;			// Whether to scroll
+	uint16_t y_offset;		// Record the y coordinate offset of the text content in the buffer
+	uint8_t t_d;			// Frame time interval
+	uint8_t t_c;			// Record time
+	uint16_t gap;			// Distance between tail and start
+	uint8_t transparent;	// Show background color
+	uint8_t scroll_en;		// Whether to scroll
+	uint8_t pixel_format;	// Gray scale
+	uint32_t bcolor;
+} Scroll_Info;
+extern Scroll_Info gScroll_Info[];
+
+void text_scroll(uint8_t type, uint8_t *buff);
+void scroll_text(void);
+/***********************/
+
+/****Curve display****/
+extern uint8_t curve_num;
+extern uint8_t curve_flag;
+typedef struct
+{
+	uint16_t xs;
+	uint16_t ys;
+	uint16_t xe;
+	uint16_t ye;
+	uint16_t Y_Central;		// Absolute coordinate of the middle value of the vertical axis
+	uint16_t VD_Central;	// Intermediate reference value of longitudinal axis
+	uint32_t color;			// Curve color
+	uint16_t MUL_Y;			// Zoom in/out??MUL_Y/256
+	uint8_t channel;		// channel
+	uint8_t Dis_HOR;		// Point spacing
+	uint8_t Width;			// Curve thickness
+	uint8_t group;			// Group number
+	uint8_t dir;			// direction
+} Curve_Info;
+extern Curve_Info gCurve_Info[];
+
+void Curve_display(uint8_t type, uint8_t *buff);
+void Display_Curve(void);
+/****************/
+
+/****Time couonter****/
+typedef struct
+{
+	uint16_t v_add;
+	uint16_t t_add;
+	uint16_t c_add;
+	uint16_t x;
+	uint16_t y;
+	uint16_t ID_start;
+	uint8_t dis_mode;
+	uint8_t dir;
+	uint8_t end_mode;
+	uint8_t end_feedback;
+	uint16_t var_addr[8];
+	uint16_t var[8];
+	uint16_t last_w;
+} Count_Info;
+extern Count_Info gCount_Info[];
+
+extern uint16_t Count_reg[8];
+extern uint8_t Count_reg_num;
+
+extern uint8_t Count_sum;
+extern uint8_t Count_flag;
+void Saving_counting_parameters(void);
+uint8_t Display_Count(uint8_t i);
+void show_Count(void);
+void count_display(uint8_t type, uint8_t *buff);
+typedef struct
+{
+	uint16_t v_add;
+	uint16_t t_add;
+	uint16_t c_add;
+	uint8_t dir;
+	uint8_t end_feedback;
+	uint16_t var_addr[8];
+	uint16_t var[8];
+} Record_count_Info;
+extern Record_count_Info gRecord_count_Info[];
+extern uint8_t Record_count;
+
+/*************************/
+
+/****Variable_Count display****/
+extern uint8_t Var_Count_num;
+extern uint8_t Var_Count_flag;
+typedef struct
+{
+	uint16_t v_add;
+	uint16_t c_add;
+	uint8_t v_type;
+	uint16_t V_loop;
+	uint16_t V_once;
+	uint16_t V_stop;
+	long long Vmin;
+	long long Vmax;
+	uint16_t step;	
+	uint8_t t_d;		// Frame time interval
+	uint8_t t_c;		// Record time
+	uint8_t mode;
+	uint8_t feedback;
+	uint16_t var_addr[8];
+	uint16_t var[8];
+} Var_Count_Info;
+extern Var_Count_Info gVar_Count_Info[];
+void Check_Var_Count(void);
+void Variable_Count(uint8_t type, uint8_t *buff);
+/************/
+
+
+/**********pointer************/
+
+extern uint8_t Pointer_Count_num;
+typedef struct
+{
+	uint16_t v_add;
+	uint16_t base_id;
+	uint16_t x;
+	uint16_t y;
+	uint16_t w;
+	uint16_t h;
+	uint16_t Pointer_x;
+	uint16_t Pointer_y;
+	uint16_t Sangle;
+	uint16_t Eangle;
+	uint16_t angle;
+	uint8_t	effect;
+	uint8_t	Show_Number;
+	uint16_t Num_add;
+	uint8_t	Num_type;
+	uint16_t Num_x;
+	uint16_t Num_y;
+	uint16_t Num_sid;
+	uint16_t Num_eid;
+	uint8_t	Num_Alig;
+	uint8_t	Num_Nint;
+	uint8_t	Num_Dint;
+	uint8_t	mode;
+	uint16_t Pointer_w;
+	uint16_t Pointer_h;
+	uint16_t L1;
+	uint16_t L2;
+	uint32_t L1_colour;
+	uint32_t L2_colour;
+	uint16_t Pointer_sid;
+	uint16_t Pointer_eid;
+	uint16_t Pointer_id;
+} Pointer_Info;
+extern Pointer_Info gPointer_Info[];
+void Pointer_display(uint8_t type, uint8_t *buff);
+void Run_Pointer(uint8_t num);
+
+/****Touch part****/
+
+/****Touch public use variables****/
+extern uint8_t button_Press_flag;
+extern uint8_t Button_Key_Code_Flag;
+extern uint16_t Button_Key_Code;
+extern uint8_t buzzer_start;
+extern uint8_t buzzer_10ms_count;
+void touch_buzzer(void);
+/********************************/
+
+/****Basic touch****/
+typedef struct
+{
+	uint16_t Code;		// Function code
+	uint8_t len;		// Length
+	uint16_t Xs;		// Upper left corner coordinate
+	uint16_t Ys;
+	uint16_t Xe;		// Lower right corner coordinate
+	uint16_t Ye;
+	uint16_t Keyvalue;	// Key value
+	uint16_t id;		// Icon id
+	uint16_t press_id;
+	uint16_t Next_id;
+} Basci_Info;
+extern Basci_Info gBasci_Info[];
+extern uint8_t Basci_count;
+extern uint8_t Basci_flag;
+extern uint8_t Basci_num;
+void Basic_touch(void);
+/*************/
+
+/****VarKey****/
+typedef struct
+{
+	uint16_t Code;
+	uint8_t len;
+	uint16_t Xs;
+	uint16_t Ys;
+	uint16_t Xe;
+	uint16_t Ye;
+	uint16_t p_add;			// Variable pointer
+	uint8_t p_tpye;			// Variable type
+	uint8_t Adj_mode;		// Adjustment mode
+	uint8_t Return_Mode;	// Threshold return
+	uint16_t Adj_step;		// Adjusting step length
+	signed short V_min;		// Lower limit
+	signed short V_max;		// Upper limit
+	uint8_t key_mode;		// Press mode, 0:continuous adjustment, 1:adjustment only once
+	uint16_t id;			// Icon id
+	uint16_t press_id;		// Press icon id
+} Adj_Info;
+extern Adj_Info gAdj_Info[];
+
+extern uint8_t Adj_count;
+extern uint8_t Adj_flag;
+extern uint8_t Adj_num;
+extern uint8_t Adj_time;
+extern uint8_t Adj_loop;
+
+void Adj_touch(void);
+/************/
+
+/****Sliding bar****/
+typedef struct
+{
+	uint16_t Code;
+	uint8_t len;
+	uint16_t x1;			// Touch background display coordinates x,y
+	uint16_t y1;
+	uint16_t bgid;			// Background picture id
+	uint16_t x2;			// Progress chart display coordinates x,y
+	uint16_t y2;
+	uint16_t slideid;		// Progress chart id
+	uint16_t Xs;			// Sliding area
+	uint16_t Ys;
+	uint16_t Xe;
+	uint16_t Ye;
+	uint16_t p_add;
+	uint16_t arrowid;		// Touch head id
+	uint8_t direction;		// Sliding direction
+	uint16_t lastx;
+	uint16_t lasty;
+	uint16_t dx;
+	uint16_t dy;
+	int16_t V_min;			// Lower limit
+	int16_t V_max;			// Superior limit
+} Slide_Info;
+extern Slide_Info gSlide_Info[];
+
+extern uint8_t Slide_count;
+extern uint8_t Slide_flag;
+extern uint8_t slide_first_touch;
+extern uint8_t slide_num;
+
+void Disp_slide(uint8_t i);
+void Progress_bar_sliding(void);
+/********/
+
+/****data input****/
+typedef struct
+{
+	uint16_t Code;
+	uint8_t len;
+	uint16_t Xs;
+	uint16_t Ys;
+	uint16_t Xe;
+	uint16_t Ye;
+	uint16_t p_add;
+	uint8_t p_tpye;			// Variable type
+	uint8_t I_num;			// Number of integers
+	uint8_t D_num;			// Number of decimal
+	uint16_t kb_x;			// Keyboard display position
+	uint16_t kb_y;
+	uint16_t dp_x;			// Data display position
+	uint16_t dp_y;
+	uint8_t zk_id;
+	uint8_t zk_w;
+	uint8_t zk_h;
+	uint8_t cursor_color;
+	uint16_t kb_id;
+	uint8_t Limite_EN;		// 0xFF:Enable input range limit
+	int32_t V_min;
+	int32_t V_max;
+	uint8_t Alig;			// Left justifying or right justifying of data
+	uint32_t fcolor;
+
+} Dio_Info;
+
+extern Dio_Info gDio_Info[];
+extern uint8_t Dio_count;
+extern uint8_t Dio_num;
+extern uint8_t Dio_flag;
+
+void data_input(void);
+/***********/
+
+/****Keyboard touch****/
+typedef struct
+{
+	uint16_t Code;
+	uint8_t len;
+	uint16_t Xs;
+	uint16_t Ys;
+	uint16_t Xe;
+	uint16_t Ye;
+	uint16_t Keyvalue;
+	uint16_t press_id;
+
+} Kb_Info;
+
+extern Kb_Info gKb_Info[];
+extern uint8_t Kb_count;
+extern uint8_t Kb_num;
+extern uint8_t Kb_flag;
+extern uint8_t DioKb_flag;
+extern uint8_t dot_flag;
+extern uint8_t i_len;
+extern uint8_t d_len;
+extern uint16_t input_len;
+extern uint8_t neg_flag;
+extern uint16_t input_w;
+extern uint8_t cur_w;
+extern uint16_t cur_x;
+extern uint16_t cur_y;
+extern uint16_t Cusor_time;
+extern uint8_t Cusor_sw;
+/***********/
+
+/****Sliding menu****/
+typedef struct
+{
+	uint16_t Code;
+	uint8_t len;
+	uint16_t p_add;
+	uint16_t Xs;
+	uint16_t Ys;
+	uint16_t Xe;
+	uint16_t Ye;
+	uint16_t L1;
+	uint16_t L2;
+	uint8_t dir;
+	uint16_t frontID;		// Foreground picture ID
+	uint16_t bgID;			// Background picture ID
+	uint8_t flag;
+	uint16_t V_max;
+	uint16_t V_min;
+	uint16_t step;
+	int16_t pos;		// For recording location
+
+} SldMenu_Info;
+
+extern SldMenu_Info gSldMenu_Info[];
+extern uint8_t sldmenu_count;
+extern uint8_t sldmenu_num;
+extern uint8_t sldmenu_flag;
+extern uint8_t SLDMfirsttouch;
+extern uint16_t lastx;
+extern uint16_t lasty;
+extern uint16_t Sldw;
+extern uint16_t Sldh;
+extern uint8_t sld_mum;
+extern uint32_t Sld_Offset_Addr;
+void slideMune(void);
+void DL_menu(uint8_t num);
+void dp_menu(uint8_t num);
+/****************/
+
+/****Gesture sliding****/
+typedef struct
+{
+	uint16_t Code;
+	uint8_t len;
+	uint16_t page[4];		// Page id
+	uint16_t value[4];		// Slide key value
+} Gesture_Info;
+extern Gesture_Info gGesture_Info;
+extern uint8_t Gesture_press;
+extern uint8_t Gesture_direction;
+extern uint8_t Gesture_flag;
+
+void Gesture_touch(void);
+/**********************/
+
+/****Slide screen****/
+typedef struct
+{
+	uint16_t Code;
+	uint8_t len;
+	uint16_t page[2];
+	uint16_t value[2];
+	uint16_t ys;			// Sliding area
+	uint16_t ye;
+} Sld_sc_Info;
+extern Sld_sc_Info gSld_sc_Info;
+extern uint8_t Ges_sc_flag;
+extern uint8_t gFirstTouch;
+void slide_screen(void);
+/*****************/
+
+/****Ring progress bar with touch****/
+typedef struct
+{
+	uint16_t Code;
+	uint8_t len;
+	uint16_t p_add;
+	uint16_t x;
+	uint16_t y;
+	uint16_t frontID;		// Foreground picture ID
+	uint16_t bgID;			// Background picture ID
+	uint16_t arrowid;		// Touch icon id
+	uint16_t Sld_R;			// Sliding radius
+	uint8_t tp_R;			// Touch radius
+	int16_t Vmin;
+	int16_t Vmax;
+	uint16_t Sangle;
+	uint16_t Eangle;
+	uint16_t dx;
+	uint16_t dy;
+	uint8_t I_num;
+	uint8_t D_num;
+	uint8_t Alig;
+	uint8_t zk_id;
+	uint32_t color;
+	uint16_t s_id;
+	uint16_t e_id;
+	uint8_t flag;
+
+	uint16_t w1;
+	uint16_t h1;
+	uint8_t rm1;
+	uint16_t x2;
+	uint16_t y2;
+	uint16_t w2;
+	uint16_t h2;
+	uint8_t rm2;
+	uint16_t xR;
+	uint16_t yR;
+
+} RingSld_Info;
+extern RingSld_Info gRingSld_Info[];
+extern uint8_t RingSld_count;
+extern uint8_t RingSld_firsttouch;
+extern uint8_t RingSld_firstnum;
+
+void DL_RingSld(uint8_t num);
+void RingSld_Display(uint8_t num, uint16_t angle);
+void RingSld_touch(void);
+/**************************/
+
+/****ASCII keyboard****/
+typedef struct
+{
+	uint16_t Code;
+	uint8_t len;
+	uint16_t Xs;
+	uint16_t Ys;
+	uint16_t Xe;
+	uint16_t Ye;
+	uint16_t p_add;			// Variable pointer
+	uint16_t p_len;			// Variable lenght
+	uint8_t scan_mode;		// Input Mode
+	uint8_t zk_id;			// Font id
+	uint8_t zk_w;			// Width of font
+	uint8_t zk_h;			// High of font
+	uint8_t cursor_color;	// Color of cursor
+	uint32_t fcolor;
+	uint16_t dp_x;			// Text display position
+	uint16_t dp_y;
+	uint16_t kb_id;
+	uint16_t kb_x;			// Keyboard display position
+	uint16_t kb_y;
+	uint8_t input_mode;
+	uint32_t zk_addr;
+} Aio_Info;
+extern Aio_Info gAio_Info[];
+extern uint8_t Aio_count;
+extern uint8_t Aio_num;
+extern uint8_t Aio_flag;
+extern uint8_t AioKb_flag;
+extern uint8_t CapsLock;
+
+void Ascii_input(void);
+/*****************/
+
+/****GBK keyboard****/
+typedef struct
+{
+	uint16_t Code;
+	uint8_t len;
+	uint16_t Xs;
+	uint16_t Ys;
+	uint16_t Xe;
+	uint16_t Ye;
+	uint16_t p_add;
+	uint16_t p_len;
+	uint8_t scan_mode;
+	uint8_t zk_id;
+	uint8_t zk_w;
+	uint8_t zk_h;
+	uint8_t cursor_color;
+	uint32_t fcolor;
+	uint16_t dp_x;
+	uint16_t dp_y;
+	uint32_t pycolor;
+	uint8_t py_zk;
+	uint8_t py_w;
+	uint8_t py_h;
+	uint16_t py_x;			// PY display position
+	uint16_t py_y;
+	uint16_t cn_x;
+	uint16_t cn_y;
+	uint8_t spacing;		// Chinese character display spacing
+	uint16_t kb_id;
+	uint16_t kb_x;			// Keyboard display position
+	uint16_t kb_y;
+	uint8_t input_mode;
+	uint32_t zk_addr;
+	uint32_t py_addr;
+} GBKio_Info;
+extern GBKio_Info gGBKio_Info[];
+
+void GBK_input(void);
+extern uint8_t GBKio_count;
+extern uint8_t GBKio_num;
+extern uint8_t GBKio_flag;
+extern uint8_t GBKioKb_flag;
+extern uint8_t GBK_PY_length;
+extern uint8_t GBK_CN_EN;
+extern uint8_t GBK_PY_buff[];
+extern uint16_t GBK_PY_num;
+extern uint8_t GBK_len;
+extern uint32_t GBK_PY_addr;
+extern uint8_t GBK_linenum;
+/********************/
+
+/****VarKey****/
+typedef struct
+{
+	uint16_t Code;
+	uint8_t len;
+	uint16_t Xs;
+	uint16_t Ys;
+	uint16_t Xe;
+	uint16_t Ye;
+	uint16_t id;
+	uint16_t press_id;
+	uint16_t Next_id;
+	uint16_t var_addr[8];
+	uint16_t var[8];
+} VarKey_Info;
+extern VarKey_Info gVarKey_Info[];
+extern uint8_t VarKey_count;
+extern uint8_t VarKey_flag;
+extern uint8_t VarKey_num;
+void VarKey_touch(void);
+/************************************/
+
+/***popup window****/
+typedef struct
+{
+	uint16_t Code;
+	uint8_t len;
+	uint16_t Xs;
+	uint16_t Ys;
+	uint16_t Xe;
+	uint16_t Ye;
+	uint16_t Keyvalue;
+	uint16_t id;
+	uint16_t press_id;
+	uint16_t pop_up_id;
+	uint16_t pop_up_x;
+	uint16_t pop_up_y;
+	uint8_t function;
+
+} Pop_up_Info;
+extern Pop_up_Info gPop_up_Info[];
+extern uint8_t Pop_up_count;
+extern uint8_t Pop_up_flag;
+extern uint8_t Pop_up_num;
+extern uint8_t Pop_up_press;
+extern uint16_t Pop_up_x;
+extern uint16_t Pop_up_y;
+extern uint16_t Pop_up_id;
+void pop_up_touch(void);
+/************************/
+
+void APP(u32 appxaddr);
+#endif
