@@ -20,6 +20,10 @@ jobs:
         run: |
           arm-none-eabi-gcc --version
 
+      - name: Fix case-sensitivity issues
+        run: |
+          ln -s CST3XX.h Function/cst3xx.h
+
       - name: Download CMSIS GCC headers
         run: |
           curl -L https://raw.githubusercontent.com/ARM-software/CMSIS_5/develop/CMSIS/Core/Include/cmsis_gcc.h -o ccore/cmsis_gcc.h
