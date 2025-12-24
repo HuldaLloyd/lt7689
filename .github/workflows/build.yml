@@ -53,6 +53,7 @@ jobs:
           CFLAGS += -IFunction
           CFLAGS += -IFunction_drv
           CFLAGS += -IMCU_drv
+          CFLAGS += -IMCU_drv/drv/inc
           CFLAGS += -ILevetoplib
           CFLAGS += -IQRCODE
           CFLAGS += -Iccore
@@ -68,6 +69,7 @@ jobs:
           C_SOURCES += $(wildcard Function/*.c)
           C_SOURCES += $(wildcard Function_drv/*.c)
           C_SOURCES += $(wildcard MCU_drv/*.c)
+          C_SOURCES += $(wildcard MCU_drv/drv/src/*.c)
           C_SOURCES += $(wildcard Levetoplib/*.c)
           C_SOURCES += $(wildcard QRCODE/*.c)
           C_SOURCES += $(wildcard ccore/*.c)
