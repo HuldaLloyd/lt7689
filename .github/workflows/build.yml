@@ -24,7 +24,7 @@ jobs:
         run: |
           ln -s CST3XX.h Function/cst3xx.h
           sed -i 's/unsigned int ROP_Code/uint32_t ROP_Code/g' Function/LT768_Lib.h
-          sed -i '1i#ifndef __NOP\n#define __NOP() __asm__ volatile ("nop")\n#endif' Function_drv/tp_drv.c
+          sed -i 's/__NOP;/__NOP();/g' Function_drv/tp_drv.c
 
       - name: Download CMSIS GCC headers
         run: |
