@@ -56,6 +56,7 @@ jobs:
           CFLAGS = $(MCU)
           CFLAGS += -Wall -Wno-error -fdata-sections -ffunction-sections
           CFLAGS += -O0 -g
+          CFLAGS += -DARMCM4_FP
 
           # Include paths
           CFLAGS += -IUser
