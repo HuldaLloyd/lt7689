@@ -82,7 +82,6 @@ jobs:
           C_SOURCES += $(wildcard MCU_drv/drv/src/*.c)
           C_SOURCES += $(wildcard Levetoplib/*.c)
           C_SOURCES += $(wildcard QRCODE/*.c)
-          C_SOURCES += $(wildcard ccore/*.c)
 
           # Object files
           OBJECTS = $(C_SOURCES:.c=.o)
