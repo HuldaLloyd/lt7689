@@ -1,4 +1,4 @@
-﻿name: Build LT7689
+name: Build LT7689
 
 on:
   workflow_dispatch:
@@ -6,99 +6,100 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Install ARM GCC toolchain
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gcc-arm-none-eabi
-        
-    - name: Verify toolchain installation
-      run: |
-        arm-none-eabi-gcc --version
-        
-    - name: Create Makefile
-      run: |
-        cat > Makefile << 'EOF'
-        # Compiler settings
-        CC = arm-none-eabi-gcc
-        OBJCOPY = arm-none-eabi-objcopy
-        SIZE = arm-none-eabi-size
-        
-        # Project name
-        PROJECT = LT7689
-        
-        # CPU settings for Cortex-M4 with FPU
-        CPU = -mcpu=cortex-m4
-        FPU = -mfpu=fpv4-sp-d16
-        FLOAT-ABI = -mfloat-abi=hard
-        MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
-        
-        # C flags
-        CFLAGS = $(MCU)
-        CFLAGS += -Wall -fdata-sections -ffunction-sections
-        CFLAGS += -O0 -g
-        
-        # Include paths
-        CFLAGS += -IUser
-        CFLAGS += -IFunction
-        CFLAGS += -IFunction_drv
-        CFLAGS += -IMCU_drv
-        CFLAGS += -ILevetoplib
-        CFLAGS += -IQRCODE
-        CFLAGS += -Iccore
-        
-        # Linker flags
-        LDFLAGS = $(MCU)
-        LDFLAGS += -Wl,--gc-sections
-        LDFLAGS += -Wl,-Map=$(PROJECT).map
-        
-        # Source files
-        C_SOURCES = $(wildcard User/*.c)
-        C_SOURCES += $(wildcard Function/*.c)
-        C_SOURCES += $(wildcard Function_drv/*.c)
-        C_SOURCES += $(wildcard MCU_drv/*.c)
-        C_SOURCES += $(wildcard Levetoplib/*.c)
-        C_SOURCES += $(wildcard QRCODE/*.c)
-        C_SOURCES += $(wildcard ccore/*.c)
-        
-        # Object files
-        OBJECTS = $(C_SOURCES:.c=.o)
-        
-        # Build target
-        all: $(PROJECT).elf $(PROJECT).hex $(PROJECT).bin
-        	$(SIZE) $(PROJECT).elf
-        
-        $(PROJECT).elf: $(OBJECTS)
-        	$(CC) $(LDFLAGS) -o $@ $^
-        
-        $(PROJECT).hex: $(PROJECT).elf
-        	$(OBJCOPY) -O ihex $< $@
-        
-        $(PROJECT).bin: $(PROJECT).elf
-        	$(OBJCOPY) -O binary -S $< $@
-        
-        %.o: %.c
-        	$(CC) $(CFLAGS) -c $< -o $@
-        
-        clean:
-        	rm -f $(OBJECTS) $(PROJECT).elf $(PROJECT).hex $(PROJECT).bin $(PROJECT).map
-        
-        .PHONY: all clean
-        EOF
-        
-    - name: Build project
-      run: make
-      
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: LT7689-firmware
-        path: |
-          LT7689.elf
-          LT7689.hex
-          LT7689.bin
-          LT7689.map
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install ARM GCC toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi
+
+      - name: Verify toolchain installation
+        run: |
+          arm-none-eabi-gcc --version
+
+      - name: Create Makefile
+        run: |
+          cat > Makefile << 'EOF'
+          # Compiler settings
+          CC = arm-none-eabi-gcc
+          OBJCOPY = arm-none-eabi-objcopy
+          SIZE = arm-none-eabi-size
+
+          # Project name
+          PROJECT = LT7689
+
+          # CPU settings for Cortex-M4 with FPU
+          CPU = -mcpu=cortex-m4
+          FPU = -mfpu=fpv4-sp-d16
+          FLOAT-ABI = -mfloat-abi=hard
+          MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
+
+          # C flags
+          CFLAGS = $(MCU)
+          CFLAGS += -Wall -fdata-sections -ffunction-sections
+          CFLAGS += -O0 -g
+
+          # Include paths
+          CFLAGS += -IUser
+          CFLAGS += -IFunction
+          CFLAGS += -IFunction_drv
+          CFLAGS += -IMCU_drv
+          CFLAGS += -ILevetoplib
+          CFLAGS += -IQRCODE
+          CFLAGS += -Iccore
+          CFLAGS += -Iccore/common
+
+          # Linker flags
+          LDFLAGS = $(MCU)
+          LDFLAGS += -Wl,--gc-sections
+          LDFLAGS += -Wl,-Map=$(PROJECT).map
+
+          # Source files
+          C_SOURCES = $(wildcard User/*.c)
+          C_SOURCES += $(wildcard Function/*.c)
+          C_SOURCES += $(wildcard Function_drv/*.c)
+          C_SOURCES += $(wildcard MCU_drv/*.c)
+          C_SOURCES += $(wildcard Levetoplib/*.c)
+          C_SOURCES += $(wildcard QRCODE/*.c)
+          C_SOURCES += $(wildcard ccore/*.c)
+
+          # Object files
+          OBJECTS = $(C_SOURCES:.c=.o)
+
+          # Build target
+          all: $(PROJECT).elf $(PROJECT).hex $(PROJECT).bin
+          	$(SIZE) $(PROJECT).elf
+
+          $(PROJECT).elf: $(OBJECTS)
+          	$(CC) $(LDFLAGS) -o $@ $^
+
+          $(PROJECT).hex: $(PROJECT).elf
+          	$(OBJCOPY) -O ihex $< $@
+
+          $(PROJECT).bin: $(PROJECT).elf
+          	$(OBJCOPY) -O binary -S $< $@
+
+          %.o: %.c
+          	$(CC) $(CFLAGS) -c $< -o $@
+
+          clean:
+          	rm -f $(OBJECTS) $(PROJECT).elf $(PROJECT).hex $(PROJECT).bin $(PROJECT).map
+
+          .PHONY: all clean
+          EOF
+
+      - name: Build project
+        run: make
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: LT7689-firmware
+          path: |
+            LT7689.elf
+            LT7689.hex
+            LT7689.bin
+            LT7689.map
