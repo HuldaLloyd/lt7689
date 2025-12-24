@@ -24,6 +24,7 @@ jobs:
         run: |
           ln -s CST3XX.h Function/cst3xx.h
           ln -s libEFlash.h MCU_drv/drv/inc/libEflash.h
+          touch MCU_drv/drv/inc/debug.h
           sed -i 's/unsigned int ROP_Code/uint32_t ROP_Code/g' Function/LT768_Lib.h
           sed -i 's/__NOP;/__NOP();/g' Function_drv/tp_drv.c
 
