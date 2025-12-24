@@ -20,6 +20,12 @@ jobs:
         run: |
           arm-none-eabi-gcc --version
 
+      - name: Download CMSIS GCC headers
+        run: |
+          curl -L https://raw.githubusercontent.com/ARM-software/CMSIS_5/develop/CMSIS/Core/Include/cmsis_gcc.h -o ccore/cmsis_gcc.h
+          curl -L https://raw.githubusercontent.com/ARM-software/CMSIS_5/develop/CMSIS/Core/Include/cmsis_compiler.h -o ccore/cmsis_compiler.h
+          curl -L https://raw.githubusercontent.com/ARM-software/CMSIS_5/develop/CMSIS/Core/Include/cmsis_version.h -o ccore/cmsis_version.h
+
       - name: Create Makefile
         run: |
           cat > Makefile << 'EOF'
